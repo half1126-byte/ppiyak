@@ -1,3 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Pretendard:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Quicksand', 'Pretendard', sans-serif;
+    @apply bg-slate-50 text-slate-800 antialiased overflow-x-hidden;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer utilities {
+
+  /* Milky Glass */
+  .glass-milky {
+    @apply bg-white/70 backdrop-blur-2xl border border-white/80 shadow-soft;
+  }
+
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-white/60 shadow-medium;
+  }
+
+  .text-gradient-primary {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-primary-600;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
