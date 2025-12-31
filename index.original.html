@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>유치원 생활기록부(유아발달상황) 5문장·1문단 생성/검증기</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; margin:20px; line-height:1.45}
+    h1{margin:0 0 6px}
+    .muted{color:#666; font-size:13px}
+    .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+    label{font-weight:800; display:block; margin:10px 0 6px}
+    textarea,input,select{width:100%; padding:10px; border:1px solid #ddd; border-radius:12px; box-sizing:border-box}
+    textarea{min-height:90px}
+    .card{border:1px solid #eee; border-radius:18px; padding:14px; margin:12px 0; box-shadow:0 2px 10px rgba(0,0,0,.04)}
+    button{padding:10px 12px; border:0; border-radius:12px; cursor:pointer; font-weight:900}
+    button.primary{background:#111; color:#fff}
+    button.ghost{background:#f3f4f6}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .pill{display:inline-block; padding:4px 10px; border-radius:999px; background:#f3f4f6; font-size:12px; margin-right:6px}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .ok{color:#0a7a2f; font-weight:900}
+    .bad{color:#b42318; font-weight:900}
+    .chips{display:flex; flex-wrap:wrap; gap:8px}
+    .chip{border:1px solid #ddd; background:#fff; padding:7px 10px; border-radius:999px; cursor:pointer; font-weight:800; font-size:12px}
+    .chip:hover{background:#f9fafb}
+    .tiny{font-size:12px}
+    .hr{height:1px; background:#eee; margin:12px 0}
+  </style>
+</head>
+
+<body>
+  <h1>유아발달상황 5문장·1문단 생성/검증기</h1>
+  <div class="muted">
+    목표: ① 5문장 ② 500자 이내 ③ 종결 “~함/~음/~임” ④ 허용 문장부호 “마침표·쉼표·중간점(·)”만 ⑤ 유아/또래 이름 금지 ⑥ “학생은/그는/그녀는” 금지 ⑦ 1문단 자연 연결 ⑧ 부정표현은 긍정 방향으로 재구성
+  </div>
+
+  <div class="card">
+    <div class="grid">
+      <div>
+        <label>모드</label>
+        <select id="mode">
+          <option value="integrated">통합 5문장(1문단) 생성</option>
+          <option value="domain_one">영역 1문장만 생성</option>
+          <option value="rewrite">기존 문단을 지침에 맞게 수정/보완</option>
+          <option value="variants">통합 5문장(1문단) 10개 다양화</option>
+        </select>
+        <div class="muted tiny" style="margin-top:6px">
+          현장 흐름: 관찰 메모 → 생성 → 검증/자동수정 → 최종 붙여넣기
+        </div>
+      </div>
+
+      <div>
+        <label>요청 톤</label>
+        <select id="tone">
+          <option value="neutral">중립(관찰 중심, 평가 최소)</option>
+          <option value="soft">부드럽게(성장·지원 암시, 단정 금지)</option>
+          <option value="compact">더 간결하게(500자 여유 확보)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <label>유아 연령(선택)</label>
+        <input id="age" placeholder="예: 만 3세" />
+      </div>
+      <div>
+        <label>관찰 맥락(필수)</label>
+        <input id="context" placeholder="예: 12월 3주, 자유놀이(블록/역할/미술)/바깥놀이/정리정돈 등" />
+      </div>
+    </div>
+
+    <label>관찰 기록 메모(필수, ‘사실 단서’ 위주)</label>
+    <textarea id="evidence" placeholder="예: 블록놀이에서 다양한 크기 블록을 끼우며 구조를 바꾸고 10분 이상 몰입, 친구와 역할을 나누어 정리 규칙을 지키며 교사 질문에 짧은 문장으로 답함 등"></textarea>
+
+    <div class="grid">
+      <div>
+        <label>신체운동·건강(키워드)</label>
+        <textarea id="k_phy" placeholder="예: 소근육 조절, 도구 안전사용, 위생습관, 균형"></textarea>
+      </div>
+      <div>
+        <label>의사소통(키워드)</label>
+        <textarea id="k_com" placeholder="예: 질문, 설명, 경험 말하기, 듣고 반응"></textarea>
+      </div>
+      <div>
+        <label>사회관계(키워드)</label>
+        <textarea id="k_soc" placeholder="예: 양보, 협력, 규칙 이해, 감정 조절"></textarea>
+      </div>
+      <div>
+        <label>예술경험(키워드)</label>
+        <textarea id="k_art" placeholder="예: 노래/춤, 미술 표현, 감상, 재료 탐색"></textarea>
+      </div>
+      <div>
+        <label>자연탐구(키워드)</label>
+        <textarea id="k_nat" placeholder="예: 관찰, 분류, 수 세기, 예측, 비교"></textarea>
+      </div>
+      <div>
+        <label>단일 생성 영역(모드: ‘영역 1문장’일 때만)</label>
+        <select id="oneDomain">
+          <option value="신체운동·건강">신체운동·건강</option>
+          <option value="의사소통">의사소통</option>
+          <option value="사회관계">사회관계</option>
+          <option value="예술경험">예술경험</option>
+          <option value="자연탐구">자연탐구</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <label>레퍼런스처럼 “클릭으로 채우기” 키워드 칩(선택)</label>
+    <div class="chips" id="chipBox"></div>
+    <div class="muted tiny" style="margin-top:8px">칩을 누르면 해당 영역 키워드 칸에 자동 추가됨</div>
+
+    <div class="hr"></div>
+
+    <label>기존 문단(모드: ‘수정/보완’일 때 사용)</label>
+    <textarea id="existing" placeholder="여기에 기존 유아발달상황 문단을 붙여넣기"></textarea>
+
+    <div class="row" style="margin-top:12px">
+      <button class="primary" id="btnPrompt">프롬프트 생성</button>
+      <button class="ghost" id="btnValidate">결과 검증</button>
+      <button class="ghost" id="btnAutoFix">자동 수정(룰 기반)</button>
+      <button class="ghost" id="btnCopyPrompt">프롬프트 복사</button>
+      <button class="ghost" id="btnCopyOut">결과 복사</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <span class="pill">LLM용 프롬프트</span>
+      <span class="muted">프롬프트를 복사해 생성형 AI에 넣고 결과를 아래 “LLM 결과”에 붙여넣기</span>
+    </div>
+    <textarea id="promptOut" class="mono" style="min-height:170px" placeholder="여기에 프롬프트가 생성됨"></textarea>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <span class="pill">LLM 결과</span>
+      <span class="muted">통합 모드: 반드시 1문단(줄바꿈 없이)로 붙여넣기</span>
+    </div>
+    <textarea id="llmOut" class="mono" style="min-height:170px" placeholder="여기에 LLM 결과(문단)를 붙여넣기"></textarea>
+    <div id="report" style="margin-top:10px"></div>
+    <div id="suggest" style="margin-top:10px"></div>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  // ====== 설정/규칙 ======
+  const RULES = {
+    maxChars: 500,
+    // 허용 문장부호: 마침표 . , 쉼표 , 중간점 · (그리고 공백)
+    // 이 외 기호가 있으면 NG
+    forbiddenPunctRegex: /[!?;:"'“”‘’()\[\]{}<>《》【】~`@#$%^&*_+=|\\\/…—–\-·]{1,}/g, // 일단 넓게 잡고 아래에서 허용(·)만 예외 처리
+    // 참고: 위 정규식에 '·'가 포함되어 있어, 검사 시 예외 처리함
+    allowedPunctRegex: /^[0-9A-Za-z가-힣\s.,·]+$/,
+
+    // 금지 표현(표현 주체)
+    forbiddenSubjects: [
+      "학생은", "학생이", "그는", "그가", "그녀는", "그녀가",
+      "이 유아는", "해당 유아는"
+    ],
+
+    // 부정표현 감지(경고용) + 간단 치환(자동수정용)
+    negativeMap: [
+      // 너무 단정적인 표현을 "시도/도전/점차"로 완화
+      { from: /못함/g, to: "도전해봄" },
+      { from: /못하/g, to: "시도해보" },
+      { from: /어려워함/g, to: "도전해가고 있음" },
+      { from: /어려워하/g, to: "도전해가" },
+      { from: /산만함/g, to: "관심을 넓혀가고 있음" },
+      { from: /주의가\s*짧음/g, to: "집중을 길러가고 있음" },
+      { from: /목소리가\s*작음/g, to: "표현에 자신감을 키워가고 있음" },
+      { from: /느림/g, to: "차분히 진행함" },
+      { from: /소극적/g, to: "차분히 참여해가고 있음" },
+      { from: /공격적/g, to: "감정을 조절해가고 있음" },
+      { from: /자주\s*울음/g, to: "감정을 표현하고 조절해가고 있음" }
+    ],
+
+    // 이름 추정 패턴(정확한 판별 불가 → 경고)
+    // 2~4글자 한글 + 조사(은/는/이/가/을/를/와/과/에게/한테/에서/으로/로) 조합 감지
+    possibleNameRegex: /([가-힣]{2,4})(은|는|이|가|을|를|와|과|에게|한테|에서|으로|로)\b/g,
+
+    // 문장 종결(명사형): ~함/~음/~임 (마침표는 있어도 됨)
+    endingRegex: /(함|음|임)\.?$/,
+
+    // 통합 5문장 분리: 마침표(.) 기준. (쉼표/중간점은 문장 내부로 취급)
+    // 최종 마침표가 없어도 문장 5개면 OK로 처리
+  };
+
+  const CHIP_PRESETS = [
+    { domain:"신체운동·건강", tags:["소근육 조절","대근육 이동","균형","도구 안전사용","위생 실천","휴식/식사 습관"] },
+    { domain:"의사소통", tags:["질문하기","경험 설명","짧은 문장","단어 확장","듣고 반응","말 순서 지키기"] },
+    { domain:"사회관계", tags:["양보","협력","규칙 이해","차례 기다림","감정 조절","도움 요청/제안"] },
+    { domain:"예술경험", tags:["노래 따라부름","리듬/움직임","재료 탐색","색·선 표현","작품 설명","감상 반응"] },
+    { domain:"자연탐구", tags:["관찰","비교","분류","수 세기","규칙성","예측/추론"] },
+  ];
+
+  const domainToField = {
+    "신체운동·건강": "k_phy",
+    "의사소통": "k_com",
+    "사회관계": "k_soc",
+    "예술경험": "k_art",
+    "자연탐구": "k_nat",
+  };
+
+  function initChips(){
+    const box = $("chipBox");
+    box.innerHTML = "";
+    CHIP_PRESETS.forEach(group => {
+      group.tags.forEach(tag => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip";
+        b.textContent = `${group.domain} · ${tag}`;
+        b.addEventListener("click", () => {
+          const fid = domainToField[group.domain];
+          const cur = $(fid).value.trim();
+          $(fid).value = cur ? (cur + ", " + tag) : tag;
+        });
+        box.appendChild(b);
+      });
+    });
+  }
+
+  // 문장 분리: 마침표 기준으로 5개 문장 추정
+  function splitSentencesByPeriod(paragraph){
+    const t = (paragraph || "").trim().replace(/\s+/g, " ");
+    if (!t) return [];
+    // 마침표를 유지한 채 분리
+    const parts = t.split(".").map(s => s.trim()).filter(Boolean);
+    // 원문에 마침표가 4개이고 5문장이면 parts.length=5.
+    // 마지막 문장에 마침표가 없다면 그래도 parts.length가 5일 수 있음.
+    return parts;
+  }
+
+  function containsForbiddenPunct(text){
+    // 허용: . , · 공백 한글/영문/숫자
+    if (RULES.allowedPunctRegex.test(text)) return false;
+    return true;
+  }
+
+  function detectForbiddenSubjects(text){
+    const hits = [];
+    RULES.forbiddenSubjects.forEach(w => {
+      if (text.includes(w)) hits.push(w);
+    });
+    return hits;
+  }
+
+  function detectPossibleNames(text){
+    const hits = [];
+    let m;
+    const re = new RegExp(RULES.possibleNameRegex);
+    while ((m = re.exec(text)) !== null){
+      hits.push(m[0]);
+      if (hits.length >= 10) break;
+    }
+    return hits;
+  }
+
+  function detectNegativePhrases(text){
+    const hits = [];
+    RULES.negativeMap.forEach(item => {
+      if (item.from.test(text)) hits.push(item.from.toString());
+    });
+    return hits;
+  }
+
+  function buildPrompt(){
+    const mode = $("mode").value;
+    const tone = $("tone").value;
+
+    const age = $("age").value.trim();
+    const context = $("context").value.trim();
+    const evidence = $("evidence").value.trim();
+
+    const k_phy = $("k_phy").value.trim();
+    const k_com = $("k_com").value.trim();
+    const k_soc = $("k_soc").value.trim();
+    const k_art = $("k_art").value.trim();
+    const k_nat = $("k_nat").value.trim();
+
+    const oneDomain = $("oneDomain").value;
+    const existing = $("existing").value.trim();
+
+    const toneGuide = (() => {
+      if (tone === "soft") return "부정적 단어는 긍정 방향으로 재구성하고, ‘점차/시도/도전/키워가고 있음’ 같은 완화 표현을 활용하라.";
+      if (tone === "compact") return "불필요한 수식어를 줄이고, 핵심 행동·근거·의미만 남겨 500자 이내 여유를 확보하라.";
+      return "평가·단정·진단을 피하고 관찰 가능한 사실 중심으로 서술하라.";
+    })();
+
+    const commonRules =
+`[핵심 작성 지침]
+- 담임교사가 관찰기록(evidence)에 근거해 작성하라.
+- 유아 이름/또래 이름은 어떤 형태로도 쓰지 마라.
+- ‘학생은/그는/그녀는’ 같은 표현 주체를 쓰지 말고 3인칭 생략형으로 쓰라.
+- 총 글자수 500자 이내로 쓰라.
+- 문장부호는 마침표(.), 쉼표(,), 중간점(·)만 사용하고 그 외 문장부호는 사용하지 마라.
+- 부정 표현은 긍정 방향으로 재구성하라(예: ‘목소리가 작음’ → ‘표현에 자신감을 키워가고 있음’).
+- 각 문장 종결은 반드시 ‘~함/~음/~임’(마침표는 붙어도 됨)으로 끝내라.
+- 결과는 줄바꿈 없이 ‘하나의 문단’으로 출력하라.`;
+
+    const inputBlock =
+`[입력]
+- 연령: ${age || "(미입력)"}
+- 관찰 맥락: ${context}
+- 관찰기록 evidence: ${evidence}
+- 신체운동·건강 키워드: ${k_phy || "(미입력)"}
+- 의사소통 키워드: ${k_com || "(미입력)"}
+- 사회관계 키워드: ${k_soc || "(미입력)"}
+- 예술경험 키워드: ${k_art || "(미입력)"}
+- 자연탐구 키워드: ${k_nat || "(미입력)"}`;
+
+    if (mode === "integrated"){
+      return (
+`너는 유치원 담임교사의 생활기록부 보조자임.
+아래 입력을 바탕으로 유아발달상황을 작성하라.
+
+${commonRules}
+
+[출력 조건]
+- 정확히 5문장으로 구성하라(마침표 기준 5문장).
+- 5개 영역(신체운동·건강/의사소통/사회관계/예술경험/자연탐구)이 통합적으로 드러나게 하라.
+- 문장 구성 권장 흐름:
+  1~2문장: 놀이 참여 모습과 신체 조절 또는 탐구성(신체운동·건강, 자연탐구)
+  3문장: 또래/교사와 상호작용(사회관계, 의사소통)
+  4문장: 표현 활동 참여(예술경험, 의사소통)
+  5문장: 생활습관/태도/변화로 마무리(기본생활, 탐구 태도)
+- 톤: ${toneGuide}
+
+${inputBlock}
+
+[출력 예시 형식]
+문장1...함. 문장2...음. 문장3...임. 문장4...함. 문장5...음.`
+      );
+    }
+
+    if (mode === "domain_one"){
+      return (
+`너는 유치원 담임교사의 생활기록부 보조자임.
+아래 입력을 바탕으로 ‘${oneDomain}’ 중심의 문장 1개를 작성하라.
+
+${commonRules}
+
+[출력 조건]
+- 정확히 1문장만 출력하라.
+- 문장 끝은 반드시 ‘~함/~음/~임’으로 끝내라.
+- ‘${oneDomain}’이 중심이 되되, evidence 근거가 드러나게 하라.
+- 톤: ${toneGuide}
+
+${inputBlock}`
+      );
+    }
+
+    if (mode === "rewrite"){
+      return (
+`너는 유치원 담임교사의 생활기록부 보조자임.
+아래 ‘기존 문단’을 지침에 맞게 수정·보완하라.
+
+${commonRules}
+
+[출력 조건]
+- 결과는 정확히 5문장, 1문단으로 출력하라.
+- 5개 영역이 통합적으로 드러나게 하라.
+- 기존 문단의 핵심 의미를 유지하되, 규칙 위반(이름/문장부호/종결/3인칭 주체/부정표현)을 모두 수정하라.
+- 톤: ${toneGuide}
+
+[관찰 맥락] ${context}
+[관찰기록 evidence] ${evidence}
+[기존 문단] ${existing || "(미입력)"}`
+      );
+    }
+
+    // variants
+    return (
+`너는 유치원 담임교사의 생활기록부 보조자임.
+아래 입력을 바탕으로 유아발달상황 ‘통합 5문장 1문단’을 10개 버전으로 작성하라.
+
+${commonRules}
+
+[출력 조건]
+- 버전은 10개, 각 버전은 줄바꿈 1회로만 구분하라(버전 내부는 줄바꿈 금지).
+- 각 버전은 정확히 5문장(마침표 기준), 1문단이어야 함.
+- 각 문장 종결은 ‘~함/~음/~임’으로 끝나야 함.
+- 5개 영역이 매 버전마다 통합적으로 드러나야 함.
+- 톤: ${toneGuide}
+
+${inputBlock}
+
+[출력 예시]
+(1) ...함. ...음. ...임. ...함. ...음.
+(2) ...함. ...음. ...임. ...함. ...음.
+...`
+    );
+  }
+
+  function validateIntegrated(text){
+    const report = [];
+    const suggest = [];
+    const raw = (text || "").trim().replace(/\s+/g, " ");
+    const totalChars = [...raw].length;
+
+    // 0) 기본 입력 체크
+    const context = $("context").value.trim();
+    const evidence = $("evidence").value.trim();
+    report.push({ ok: context.length >= 4, msg: `관찰 맥락 입력 ${context.length >= 4 ? "OK" : "부족"}` });
+    report.push({ ok: evidence.length >= 10, msg: `관찰 evidence 입력 ${evidence.length >= 10 ? "OK" : "부족(10자 이상 권장)"}` });
+
+    // 1) 글자수
+    report.push({ ok: totalChars <= RULES.maxChars, msg: `글자수 ${totalChars}/${RULES.maxChars}` });
+
+    // 2) 줄바꿈 금지(1문단)
+    const hasNewline = /[\n\r]/.test(text || "");
+    report.push({ ok: !hasNewline, msg: `1문단(줄바꿈 없음) ${!hasNewline ? "OK" : "NG"}` });
+
+    // 3) 허용 문장부호만
+    const punctOK = !containsForbiddenPunct(raw);
+    report.push({ ok: punctOK, msg: `문장부호 제한(. , · 만) ${punctOK ? "OK" : "NG"}` });
+
+    // 4) 금지 주체 표현
+    const forbiddenHits = detectForbiddenSubjects(raw);
+    report.push({ ok: forbiddenHits.length === 0, msg: `금지 주체(학생은/그는/그녀는 등) ${forbiddenHits.length===0 ? "OK" : "NG: " + forbiddenHits.join(", ")}` });
+
+    // 5) 이름 추정(경고)
+    const nameHits = detectPossibleNames(raw);
+    report.push({ ok: nameHits.length === 0, msg: `이름 추정 표현 ${nameHits.length===0 ? "OK" : "주의: " + nameHits.slice(0,5).join(", ") + (nameHits.length>5 ? "..." : "")}` });
+
+    // 6) 문장 수(마침표 기준)
+    const sents = splitSentencesByPeriod(raw);
+    report.push({ ok: sents.length === 5, msg: `문장 수(마침표 기준) ${sents.length}/5` });
+
+    // 7) 종결(각 문장 ~함/~음/~임)
+    if (sents.length > 0){
+      sents.forEach((s, i) => {
+        const ok = RULES.endingRegex.test(s + "."); // 사용자가 마침표를 뺐어도 인정되게 보정
+        report.push({ ok, msg: `${i+1}문장 종결(~함/~음/~임) ${ok ? "OK" : "NG"}` });
+      });
+    }
+
+    // 8) 부정표현 감지(경고)
+    const neg = detectNegativePhrases(raw);
+    report.push({ ok: neg.length === 0, msg: `부정표현 감지 ${neg.length===0 ? "OK" : "주의(완화 권장)"}` });
+
+    if (!punctOK){
+      suggest.push("허용 문장부호는 마침표(.), 쉼표(,), 중간점(·)만 남기고 나머지 기호를 제거하는 편이 안전함");
+    }
+    if (forbiddenHits.length){
+      suggest.push("‘학생은/그는/그녀는’ 같은 주체 표현을 삭제하고, 문장을 행동 중심으로 바로 시작하면 깔끔함");
+    }
+    if (nameHits.length){
+      suggest.push("이름으로 보일 수 있는 ‘OO는/OO가’ 형태를 ‘또래와/친구와’ 같은 일반 표현으로 바꾸면 안정적임");
+    }
+    if (sents.length !== 5){
+      suggest.push("마침표로 정확히 5문장이 되도록 재구성하면 규정 검증이 통과함");
+    }
+    if (neg.length){
+      suggest.push("부정 단어를 ‘시도/도전/키워가고 있음’ 같은 성장형 표현으로 치환하면 문서 톤이 안정적임");
+    }
+
+    return { report, suggest, sents, raw };
+  }
+
+  function autoFixIntegrated(){
+    let t = ($("llmOut").value || "").trim();
+
+    // 1) 줄바꿈 제거 → 1문단
+    t = t.replace(/[\n\r]+/g, " ").replace(/\s+/g, " ").trim();
+
+    // 2) 금지 문장부호 제거(허용: . , ·)
+    // 허용 외 문자 중 문장부호 후보만 제거
+    // (문자 자체는 남기되, 위배되는 기호를 제거하는 보수적 접근)
+    t = t.replace(/[!?;:"'“”‘’()\[\]{}<>《》【】~`@#$%^&*_+=|\\\/…—–\-]/g, "");
+
+    // 3) 금지 주체 표현 삭제(보수적으로 해당 단어만)
+    RULES.forbiddenSubjects.forEach(w => {
+      t = t.split(w).join("");
+    });
+
+    // 4) 부정표현 룰 기반 완화
+    RULES.negativeMap.forEach(({from, to}) => {
+      t = t.replace(from, to);
+    });
+
+    // 5) 문장 수/종결 보정
+    // 마침표 기준으로 5문장 맞추기: 부족하면 마침표를 추가(쉼표를 마침표로 승격하지는 않음)
+    let sents = splitSentencesByPeriod(t);
+
+    // 마침표가 거의 없어서 문장 분리가 안 되면, 쉼표 기준으로 임시 분리 후 5개로 합치기
+    if (sents.length <= 1){
+      const rough = t.split(",").map(s=>s.trim()).filter(Boolean);
+      if (rough.length >= 5){
+        sents = rough.slice(0,5);
+      } else {
+        // 그래도 부족하면 마지막에 보강 문장 placeholder
+        sents = rough;
+        while (sents.length < 5) sents.push("관찰 내용이 추가로 필요함");
+      }
+    } else if (sents.length > 5){
+      sents = sents.slice(0,5);
+    } else if (sents.length < 5){
+      while (sents.length < 5) sents.push("관찰 내용이 추가로 필요함");
+    }
+
+    // 종결(함/음/임) 강제: 끝 어미를 확인하고 없으면 "함" 추가
+    sents = sents.map(s => {
+      let x = (s || "").trim();
+      if (!x) x = "관찰 내용이 추가로 필요함";
+      // 마지막에 마침표가 들어올 수 있으니 제거 후 검사
+      x = x.replace(/\.+$/g, "").trim();
+      if (!RULES.endingRegex.test(x + ".")){
+        x = x.replace(/[.]+$/g,"").trim();
+        x += "함";
+      }
+      return x;
+    });
+
+    // 6) 1문단/5문장으로 조립
+    let out = sents.map(s => s.replace(/\.+$/g,"")).join(". ") + ".";
+
+    // 7) 500자 초과 시: 뒤 문장부터 간결화(최소 안전 절삭)
+    while ([...out].length > RULES.maxChars){
+      // 가장 긴 문장 찾고 조금 절삭
+      const arr = out.replace(/\.+$/,"").split(".").map(s=>s.trim()).filter(Boolean);
+      if (!arr.length) break;
+      let maxIdx = 0, maxLen = 0;
+      arr.forEach((s,i)=>{ const L=[...s].length; if(L>maxLen){maxLen=L; maxIdx=i;} });
+      if (maxLen <= 25) break;
+      arr[maxIdx] = arr[maxIdx].slice(0, Math.max(0, arr[maxIdx].length - 8)).trim();
+      out = arr.join(". ") + ".";
+    }
+
+    $("llmOut").value = out;
+    const v = validateIntegrated(out);
+    renderReport(v);
+  }
+
+  function renderReport(v){
+    const okAll = v.report.every(r => r.ok);
+    $("report").innerHTML = `
+      <div class="row">
+        <span class="${okAll ? "ok":"bad"}">${okAll ? "통과" : "보완 필요"}</span>
+        <span class="muted">체크 ${v.report.filter(r=>r.ok).length}/${v.report.length}</span>
+      </div>
+      <ul style="margin:10px 0 0; padding-left:18px">
+        ${v.report.map(r => `<li><span class="${r.ok ? "ok":"bad"}">${r.ok ? "OK":"NG"}</span> ${r.msg}</li>`).join("")}
+      </ul>
+    `;
+
+    $("suggest").innerHTML = v.suggest.length
+      ? `<div class="card" style="padding:12px; border-radius:14px">
+          <div class="row"><span class="pill">보완 제안</span><span class="muted">규정 통과 확률을 올리는 수정 포인트</span></div>
+          <ul style="margin:10px 0 0; padding-left:18px">
+            ${v.suggest.map(s => `<li>${s}</li>`).join("")}
+          </ul>
+        </div>`
+      : "";
+  }
+
+  async function copyToClipboard(text){
+    try{
+      await navigator.clipboard.writeText(text);
+    }catch(e){
+      // fallback
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+  }
+
+  // ====== 버튼 ======
+  $("btnPrompt").addEventListener("click", () => {
+    $("promptOut").value = buildPrompt();
+  });
+
+  $("btnValidate").addEventListener("click", () => {
+    const mode = $("mode").value;
+    const out = $("llmOut").value;
+    if (mode === "domain_one"){
+      // 단일 문장은 간단 검증(종결/문장부호/주체/이름/500자)
+      const t = (out || "").trim().replace(/\s+/g," ");
+      const total = [...t].length;
+      const report = [];
+      report.push({ ok: total <= RULES.maxChars, msg:`글자수 ${total}/${RULES.maxChars}` });
+      report.push({ ok: !/[\n\r]/.test(out||""), msg:`1문장(줄바꿈 없음) ${!/[\n\r]/.test(out||"") ? "OK":"NG"}` });
+      report.push({ ok: !containsForbiddenPunct(t), msg:`문장부호 제한(. , · 만) ${!containsForbiddenPunct(t) ? "OK":"NG"}` });
+      const forb = detectForbiddenSubjects(t);
+      report.push({ ok: forb.length===0, msg:`금지 주체 ${forb.length===0?"OK":"NG: "+forb.join(", ")}` });
+      const names = detectPossibleNames(t);
+      report.push({ ok: names.length===0, msg:`이름 추정 ${names.length===0?"OK":"주의: "+names.slice(0,5).join(", ")}` });
+      // 문장 종결
+      const clean = t.replace(/\.+$/,"").trim();
+      const endOK = RULES.endingRegex.test(clean + ".");
+      report.push({ ok: endOK, msg:`종결(~함/~음/~임) ${endOK?"OK":"NG"}` });
+
+      renderReport({ report, suggest:[], sents:[], raw:t });
+    } else {
+      renderReport(validateIntegrated(out));
+    }
+  });
+
+  $("btnAutoFix").addEventListener("click", () => {
+    const mode = $("mode").value;
+    if (mode === "domain_one"){
+      // 단일 문장은 가볍게만 보정
+      let t = ($("llmOut").value || "").trim().replace(/[\n\r]+/g," ").replace(/\s+/g," ").trim();
+      t = t.replace(/[!?;:"'“”‘’()\[\]{}<>《》【】~`@#$%^&*_+=|\\\/…—–\-]/g, "");
+      RULES.forbiddenSubjects.forEach(w => t = t.split(w).join(""));
+      RULES.negativeMap.forEach(({from,to}) => t = t.replace(from,to));
+      t = t.replace(/\.+$/,"").trim();
+      if (!RULES.endingRegex.test(t + ".")) t += "함";
+      // 끝에 마침표는 선택: 통일감 위해 붙임
+      if (!t.endsWith(".")) t += ".";
+      // 500자 초과 시 절삭
+      while ([...t].length > RULES.maxChars) t = t.slice(0, t.length - 8).trim();
+      $("llmOut").value = t;
+      $("btnValidate").click();
+    } else {
+      autoFixIntegrated();
+    }
+  });
+
+  $("btnCopyPrompt").addEventListener("click", async () => {
+    const t = $("promptOut").value || "";
+    await copyToClipboard(t);
+  });
+
+  $("btnCopyOut").addEventListener("click", async () => {
+    const t = $("llmOut").value || "";
+    await copyToClipboard(t);
+  });
+
+  // 초기화
+  initChips();
+</script>
+</body>
+</html>
